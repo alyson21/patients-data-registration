@@ -11,25 +11,40 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Validate secrets
+        run: |
+          missing=""
+          [ -z "${{ secrets.SSH_PRIVATE_KEY }}" ] && missing="$missing SSH_PRIVATE_KEY"
+          [ -z "${{ secrets.VPS_HOST }}" ]        && missing="$missing VPS_HOST"
+          [ -z "${{ secrets.VPS_USER }}" ]        && missing="$missing VPS_USER"
+          [ -z "${{ secrets.VPS_DIR }}" ]         && missing="$missing VPS_DIR"
+          if [ -n "$missing" ]; then
+            echo "::error::Secrets ausentes no repositório:$missing"
+            echo "Configure em: Settings → Secrets and variables → Actions"
+            exit 1
+          fi
+
       - name: Configure SSH
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/deploy_key
+          printf '%s\n' "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
           ssh-keyscan -H "${{ secrets.VPS_HOST }}" >> ~/.ssh/known_hosts
-        env:
-          SSH_AUTH_SOCK: /tmp/ssh_agent.sock
 
-      - name: Deploy via rsync + docker compose
+      - name: Sync files
         run: |
           rsync -az --delete \
-            -e "ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no" \
+            -e "ssh -i ~/.ssh/deploy_key" \
             --exclude='.git' \
             --exclude='node_modules' \
             --exclude='.env*' \
             --exclude='postgres_data' \
             . "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:${{ secrets.VPS_DIR }}"
 
+      - name: Start containers
+        run: |
           ssh -i ~/.ssh/deploy_key \
             "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}" \
-            "cd ${{ secrets.VPS_DIR }} && docker compose -f docker-compose.prod.yml up --build -d && docker image prune -f"
+            "cd ${{ secrets.VPS_DIR }} && \
+             docker compose -f docker-compose.prod.yml up --build -d && \
+             docker image prune -f"
