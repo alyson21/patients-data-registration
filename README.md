@@ -145,6 +145,35 @@ O Caddy obtém o certificado HTTPS automaticamente via Let's Encrypt.
 
 ---
 
+## Observabilidade (Loki + Grafana)
+
+Opcional. Coleta e visualiza os logs da aplicação.
+
+**Subir com observabilidade:**
+```bash
+docker compose -f docker-compose.yml -f docker-compose.observability.yml up --build
+```
+
+**Acessar o Grafana:** http://localhost:3001 — login `admin / admin`
+
+**Ver logs no Grafana:**
+1. Menu lateral → **Explore**
+2. Selecione a fonte **Loki**
+3. Digite a query e clique em **Run query**
+
+| Query | O que mostra |
+|---|---|
+| `{service="backend"}` | todos os logs do backend |
+| `{service="backend"} \|= "error"` | apenas erros |
+| `{container=~".+"}` | logs de todos os containers |
+
+**Parar a observabilidade:**
+```bash
+docker compose -f docker-compose.observability.yml down
+```
+
+---
+
 ## Estrutura
 
 ```
