@@ -51,6 +51,8 @@ docker compose down        # para os containers
 docker compose down -v     # para e apaga o banco de dados
 ```
 
+> **Atenção:** as tabelas são criadas automaticamente apenas quando o volume do banco está vazio (primeira execução). Se você já rodou o projeto antes e as tabelas estiverem faltando, reinicie do zero com `docker compose down -v` antes de subir novamente.
+
 ## Estrutura
 
 ```
